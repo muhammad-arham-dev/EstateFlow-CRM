@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowDownUp,
   ArrowLeft,
   ArrowRight,
   Building2,
@@ -28,6 +27,9 @@ import {
   AGENTS,
   LEAD_SOURCES,
   LEAD_STATUSES,
+  LEAD_TYPES,
+  LEAD_PRIORITIES,
+  LEAD_CONVERSION_STATUSES,
   leadService,
 } from '../features/leads/leadService'
 import '../styles/leads.css'
@@ -37,12 +39,15 @@ const emptyForm = {
   name: '',
   email: '',
   phone: '',
+  leadType: 'Buyer',
+  priority: 'Medium',
   source: 'Website',
   status: 'New',
   assignedTo: AGENTS[0],
   budget: '',
   propertyType: 'House',
   location: '',
+  lastContactDate: '',
   followUpDate: '',
 }
 
@@ -171,6 +176,7 @@ export default function LeadsPage() {
           lead.name,
           lead.email,
           lead.phone,
+          lead.leadType,
           lead.location,
           lead.assignedTo,
         ].some((value) =>
@@ -243,7 +249,7 @@ export default function LeadsPage() {
         label: "Follow-ups",
         value: leads.filter((lead) => {
           if (!lead.followUpDate) return false;
-          if (["Converted", "Lost"].includes(lead.status)) return false;
+          if (["Converted", "Lost", "Unqualified"].includes(lead.status)) return false;
           return lead.followUpDate <= new Date().toISOString().slice(0, 10);
         }).length,
         detail: "Due today or overdue",
@@ -270,12 +276,15 @@ export default function LeadsPage() {
       name: lead.name || "",
       email: lead.email || "",
       phone: lead.phone || "",
+      leadType: lead.leadType || "Buyer",
+      priority: lead.priority || "Medium",
       source: lead.source || "Website",
       status: lead.status || "New",
       assignedTo: lead.assignedTo || AGENTS[0],
       budget: lead.budget ?? "",
       propertyType: lead.propertyType || "House",
       location: lead.location || "",
+      lastContactDate: lead.lastContactDate || "",
       followUpDate: lead.followUpDate || "",
     });
     setFormError("");
@@ -309,7 +318,10 @@ export default function LeadsPage() {
         name: form.name.trim(),
         email: form.email.trim().toLowerCase(),
         phone: form.phone.trim(),
+        leadType: form.leadType,
+        priority: form.priority,
         location: form.location.trim(),
+        lastContactDate: form.lastContactDate,
         budget: Number(form.budget) || 0,
       };
 
@@ -431,7 +443,8 @@ export default function LeadsPage() {
     search ||
     statusFilter !== "All statuses" ||
     sourceFilter !== "All sources" ||
-    agentFilter !== "All agents";
+    agentFilter !== "All agents" ||
+    sortOrder !== "newest";
 
   return (
   <section className="leads-page">
@@ -469,19 +482,20 @@ export default function LeadsPage() {
         })}
       </div>
 
-      <section className="leads-list-card">
-        <div className="leads-list-heading">
+      <section className="clients-list-card">
+        <div className="clients-list-heading leads-list-heading">
           <div>
             <h2>All leads</h2>
-            <p>
-              {filteredLeads.length}{" "}
-              {filteredLeads.length === 1 ? "lead" : "leads"} found
-            </p>
+            <p>Browse and Manage your all Leads.</p>
           </div>
+          <span className="clients-result-count">
+            {filteredLeads.length}{' '}
+            {filteredLeads.length === 1 ? 'lead' : 'leads'}
+          </span>
         </div>
 
-        <div className="leads-toolbar">
-          <label className="leads-search">
+        <div className="clients-toolbar">
+          <label className="clients-search">
             <Search size={17} />
             <input
               value={search}
@@ -495,7 +509,6 @@ export default function LeadsPage() {
             {search && (
               <button
                 type="button"
-                className="leads-clear-search"
                 onClick={() => setSearch("")}
                 aria-label="Clear search"
               >
@@ -504,7 +517,7 @@ export default function LeadsPage() {
             )}
           </label>
 
-          <label className="leads-filter">
+          <label className="clients-filter">
             <Filter size={15} />
             <select
               value={statusFilter}
@@ -522,7 +535,8 @@ export default function LeadsPage() {
             <ChevronDown size={14} />
           </label>
 
-          <label className="leads-filter">
+          <label className="clients-filter">
+            <Filter size={15} />
             <select
               value={sourceFilter}
               onChange={(event) => {
@@ -540,7 +554,8 @@ export default function LeadsPage() {
           </label>
 
           {user?.role !== "Agent" && (
-            <label className="leads-filter">
+            <label className="clients-filter">
+              <UserRound size={15} />
               <select
                 value={agentFilter}
                 onChange={(event) => {
@@ -560,59 +575,52 @@ export default function LeadsPage() {
             </label>
           )}
 
-          <button
-            type="button"
-            className="leads-sort-button"
-            onClick={() =>
-              setSortOrder((current) =>
-                current === "newest"
-                  ? "oldest"
-                  : current === "oldest"
-                    ? "name"
-                    : "newest",
-              )
-            }
-            title="Change sort order"
-          >
-            <ArrowDownUp size={15} />
-            <span>
-              {sortOrder === "newest"
-                ? "Newest"
-                : sortOrder === "oldest"
-                  ? "Oldest"
-                  : "Name"}
-            </span>
-          </button>
+          <label className="clients-filter clients-sort">
+            <select
+              value={sortOrder}
+              onChange={(event) => {
+                setPage(1)
+                setSortOrder(event.target.value)
+              }}
+              aria-label="Sort leads"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="name">Name A–Z</option>
+            </select>
+            <ChevronDown size={14} />
+          </label>
+
+          {activeFilters && (
+            <button
+              className="clients-reset-button"
+              type="button"
+              onClick={resetFilters}
+            >
+              Reset
+            </button>
+          )}
         </div>
 
-        {activeFilters && (
-          <div className="leads-filter-summary">
-            <span>Filters are active</span>
-            <button type="button" onClick={resetFilters}>
-              Clear filters
-            </button>
-          </div>
-        )}
-
         {loading ? (
-          <div className="leads-empty-state">
-            <div className="leads-loading-indicator" />
-            <p>Loading leads...</p>
+          <div className="clients-state-card" role="status">
+            <span className="clients-spinner" />
+            Loading leads…
           </div>
         ) : visibleLeads.length === 0 ? (
-          <div className="leads-empty-state">
-            <div className="leads-empty-icon">
-              <Search size={23} />
+          <div className="clients-empty-state">
+            <div className="clients-empty-icon">
+              <Search size={24} />
             </div>
             <h3>No leads found</h3>
             <p>Try changing your search or filters, or create a new lead.</p>
             {activeFilters ? (
-              <button className="leads-secondary-button" onClick={resetFilters}>
-                Clear filters
+              <button className="clients-secondary-button" onClick={resetFilters}>
+                Reset filters
               </button>
             ) : (
               <button
-                className="leads-primary-button"
+                className="clients-primary-button"
                 onClick={openCreateModal}
               >
                 <Plus size={16} />
@@ -622,12 +630,13 @@ export default function LeadsPage() {
           </div>
         ) : (
           <>
-            <div className="leads-table-wrap">
-              <table className="leads-table">
+            <div className="clients-table-wrap">
+              <table className="clients-table">
                 <thead>
                   <tr>
                     <th>Lead</th>
-                    <th>Source</th>
+                      <th>Priority</th>
+                      <th>Source</th>
                     <th>Status</th>
                     <th>Assigned to</th>
                     <th>Budget</th>
@@ -653,6 +662,12 @@ export default function LeadsPage() {
                             <small>{lead.email}</small>
                           </span>
                         </button>
+                      </td>
+
+                      <td>
+                        <span className={`leads-priority-pill lead-priority-${getStatusClass(lead.priority || "Medium")}`}>
+                          {lead.priority || "Medium"}
+                        </span>
                       </td>
 
                       <td>
@@ -750,9 +765,19 @@ export default function LeadsPage() {
               </table>
             </div>
 
-            <footer className="leads-pagination">
-              <div className="leads-pagination-size">
-                <span>Rows per page</span>
+            <footer className="clients-pagination">
+              <span>
+                Showing{' '}
+                <strong>
+                  {(safePage - 1) * pageSize + 1}–
+                  {Math.min(safePage * pageSize, filteredLeads.length)}
+                </strong>{' '}
+                of <strong>{filteredLeads.length}</strong> leads
+              </span>
+
+              <div className="clients-pagination-controls">
+                <label>
+                  Rows{' '}
                 <select
                   value={pageSize}
                   onChange={(event) => {
@@ -763,37 +788,26 @@ export default function LeadsPage() {
                 >
                   <option value={5}>5</option>
                   <option value={8}>8</option>
-                  <option value={10}>10</option>
+                  <option value={12}>12</option>
                   <option value={20}>20</option>
                 </select>
-              </div>
-
-              <span className="leads-pagination-count">
-                {filteredLeads.length === 0
-                  ? "0 results"
-                  : `${(safePage - 1) * pageSize + 1}–${Math.min(
-                      safePage * pageSize,
-                      filteredLeads.length,
-                    )} of ${filteredLeads.length}`}
-              </span>
-
-              <div className="leads-pagination-buttons">
+                </label>
                 <button
                   type="button"
+                  aria-label="Previous page"
                   disabled={safePage <= 1}
                   onClick={() => setPage((current) => current - 1)}
-                  aria-label="Previous page"
                 >
                   <ArrowLeft size={15} />
                 </button>
                 <span>
-                  {safePage} / {totalPages}
+                  Page {safePage} of {totalPages}
                 </span>
                 <button
                   type="button"
+                  aria-label="Next page"
                   disabled={safePage >= totalPages}
                   onClick={() => setPage((current) => current + 1)}
-                  aria-label="Next page"
                 >
                   <ArrowRight size={15} />
                 </button>
@@ -877,6 +891,19 @@ export default function LeadsPage() {
                 </label>
 
                 <label>
+                  Lead type
+                  <select
+                    name="leadType"
+                    value={form.leadType}
+                    onChange={updateField}
+                  >
+                    {LEAD_TYPES.map((type) => (
+                      <option key={type}>{type}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
                   Lead source
                   <select
                     name="source"
@@ -885,6 +912,19 @@ export default function LeadsPage() {
                   >
                     {LEAD_SOURCES.map((source) => (
                       <option key={source}>{source}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Priority
+                  <select
+                    name="priority"
+                    value={form.priority}
+                    onChange={updateField}
+                  >
+                    {LEAD_PRIORITIES.map((priority) => (
+                      <option key={priority}>{priority}</option>
                     ))}
                   </select>
                 </label>
@@ -961,6 +1001,16 @@ export default function LeadsPage() {
                   />
                 </label>
 
+                <label>
+                  Last contact
+                  <input
+                    name="lastContactDate"
+                    type="date"
+                    value={form.lastContactDate}
+                    onChange={updateField}
+                  />
+                </label>
+
                 <label className="leads-form-full">
                   Next follow-up
                   <input
@@ -1031,6 +1081,7 @@ export default function LeadsPage() {
                   >
                     {selectedLead.status}
                   </span>
+                  <span>{selectedLead.priority || 'Medium'} priority</span>
                   <span>Created {formatDate(selectedLead.createdAt)}</span>
                 </div>
               </div>
@@ -1055,7 +1106,7 @@ export default function LeadsPage() {
                   Delete
                 </button>
               )}
-              {selectedLead.status !== 'Converted' && (
+              {LEAD_CONVERSION_STATUSES.includes(selectedLead.status) && (
                 <button
                   type="button"
                   className="clients-primary-button"
@@ -1127,6 +1178,14 @@ export default function LeadsPage() {
                   <Building2 size={19} />
                 </div>
                 <div className="clients-preference-grid">
+                  <div>
+                    <span>Lead type</span>
+                    <strong>{selectedLead.leadType || 'Buyer'}</strong>
+                  </div>
+                  <div>
+                    <span>Priority</span>
+                    <strong>{selectedLead.priority || 'Medium'}</strong>
+                  </div>
                   <div>
                     <span>Property type</span>
                     <strong>{selectedLead.propertyType || 'Not specified'}</strong>
@@ -1267,6 +1326,14 @@ export default function LeadsPage() {
                   <div>
                     <span>Budget</span>
                     <strong>{formatCurrency(selectedLead.budget)}</strong>
+                  </div>
+                  <div>
+                    <span>Last contact</span>
+                    <strong>
+                      {selectedLead.lastContactDate
+                        ? formatDate(selectedLead.lastContactDate)
+                        : 'Not recorded'}
+                    </strong>
                   </div>
                   <div>
                     <span>Next follow-up</span>

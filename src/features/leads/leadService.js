@@ -5,6 +5,7 @@ export const LEAD_STATUSES = [
   "New",
   "Contacted",
   "Qualified",
+  "Unqualified",
   "Appointment Scheduled",
   "Property Viewing",
   "Negotiation",
@@ -17,10 +18,30 @@ export const LEAD_SOURCES = [
   "Zillow",
   "Realtor.com",
   "Facebook",
+  "Instagram",
+  "Google Ads",
   "Referral",
   "Phone",
+  "Email",
   "Walk-in",
-];
+  "Other",
+]
+
+export const LEAD_TYPES = [
+  "Buyer",
+  "Seller",
+  "Investor",
+  "Renter",
+  "Landlord",
+]
+
+export const LEAD_PRIORITIES = ["Low", "Medium", "High"]
+export const LEAD_CONVERSION_STATUSES = [
+  "Qualified",
+  "Appointment Scheduled",
+  "Property Viewing",
+  "Negotiation",
+]
 
 export const AGENTS = [
   "Alex Morgan",
@@ -35,6 +56,8 @@ const initialLeads = [
     name: "Olivia Bennett",
     email: "olivia.bennett@example.com",
     phone: "+1 (415) 555-0132",
+    leadType: "Buyer",
+    priority: "High",
     source: "Website",
     status: "Qualified",
     assignedTo: "Sarah Johnson",
@@ -64,6 +87,7 @@ const initialLeads = [
       },
     ],
     followUpDate: "2026-10-22",
+    lastContactDate: "2026-10-15",
     createdAt: "2026-10-12T09:00:00.000Z",
   },
   {
@@ -71,6 +95,8 @@ const initialLeads = [
     name: "Noah Williams",
     email: "noah.williams@example.com",
     phone: "+1 (212) 555-0184",
+    leadType: "Buyer",
+    priority: "Medium",
     source: "Referral",
     status: "Contacted",
     assignedTo: "Alex Morgan",
@@ -87,6 +113,7 @@ const initialLeads = [
       },
     ],
     followUpDate: "2026-10-21",
+    lastContactDate: "2026-10-14",
     createdAt: "2026-10-14T11:15:00.000Z",
   },
   {
@@ -94,6 +121,8 @@ const initialLeads = [
     name: "Ava Thompson",
     email: "ava.thompson@example.com",
     phone: "+1 (512) 555-0168",
+    leadType: "Buyer",
+    priority: "High",
     source: "Zillow",
     status: "Appointment Scheduled",
     assignedTo: "Emily Davis",
@@ -110,6 +139,7 @@ const initialLeads = [
       },
     ],
     followUpDate: "2026-10-20",
+    lastContactDate: "2026-10-16",
     createdAt: "2026-10-16T14:00:00.000Z",
   },
   {
@@ -117,6 +147,8 @@ const initialLeads = [
     name: "Liam Anderson",
     email: "liam.anderson@example.com",
     phone: "+1 (305) 555-0121",
+    leadType: "Renter",
+    priority: "Medium",
     source: "Facebook",
     status: "New",
     assignedTo: "Daniel Carter",
@@ -133,6 +165,7 @@ const initialLeads = [
       },
     ],
     followUpDate: "",
+    lastContactDate: "",
     createdAt: "2026-10-18T08:45:00.000Z",
   },
   {
@@ -140,6 +173,8 @@ const initialLeads = [
     name: "Sophia Martinez",
     email: "sophia.martinez@example.com",
     phone: "+1 (206) 555-0177",
+    leadType: "Buyer",
+    priority: "Urgent",
     source: "Realtor.com",
     status: "Property Viewing",
     assignedTo: "Sarah Johnson",
@@ -156,6 +191,7 @@ const initialLeads = [
       },
     ],
     followUpDate: "2026-10-23",
+    lastContactDate: "2026-10-10",
     createdAt: "2026-10-10T13:20:00.000Z",
   },
   {
@@ -163,6 +199,8 @@ const initialLeads = [
     name: "Ethan Wilson",
     email: "ethan.wilson@example.com",
     phone: "+1 (617) 555-0149",
+    leadType: "Investor",
+    priority: "High",
     source: "Phone",
     status: "Negotiation",
     assignedTo: "Alex Morgan",
@@ -179,6 +217,7 @@ const initialLeads = [
       },
     ],
     followUpDate: "2026-10-24",
+    lastContactDate: "2026-10-08",
     createdAt: "2026-10-08T16:10:00.000Z",
   },
   {
@@ -186,6 +225,8 @@ const initialLeads = [
     name: "Isabella Garcia",
     email: "isabella.garcia@example.com",
     phone: "+1 (702) 555-0193",
+    leadType: "Buyer",
+    priority: "Medium",
     source: "Walk-in",
     status: "New",
     assignedTo: "Emily Davis",
@@ -202,6 +243,7 @@ const initialLeads = [
       },
     ],
     followUpDate: "",
+    lastContactDate: "",
     createdAt: "2026-10-17T12:00:00.000Z",
   },
   {
@@ -209,6 +251,8 @@ const initialLeads = [
     name: "James Taylor",
     email: "james.taylor@example.com",
     phone: "+1 (303) 555-0155",
+    leadType: "Seller",
+    priority: "Low",
     source: "Referral",
     status: "Lost",
     assignedTo: "Daniel Carter",
@@ -225,6 +269,7 @@ const initialLeads = [
       },
     ],
     followUpDate: "",
+    lastContactDate: "2026-10-05",
     createdAt: "2026-10-05T09:30:00.000Z",
   },
 ];
@@ -270,7 +315,29 @@ export const leadService = {
       return initialLeads;
     }
 
-    return stored;
+    if (!Array.isArray(stored)) {
+      throw new Error("Lead data is invalid. Please clear the demo data.");
+    }
+
+    const migrated = stored.map((lead) => ({
+      ...lead,
+      leadType: lead.leadType || "Buyer",
+      priority: lead.priority || "Medium",
+      lastContactDate: lead.lastContactDate || "",
+    }));
+
+    if (
+      migrated.some(
+        (lead, index) =>
+          lead.leadType !== stored[index].leadType ||
+          lead.priority !== stored[index].priority ||
+          lead.lastContactDate !== stored[index].lastContactDate,
+      )
+    ) {
+      writeStorage(LEADS_KEY, migrated);
+    }
+
+    return migrated;
   },
 
   async create(values) {
@@ -391,6 +458,10 @@ export const leadService = {
       throw new Error("This lead has already been converted.");
     }
 
+    if (!LEAD_CONVERSION_STATUSES.includes(lead.status)) {
+      throw new Error("Qualify the lead before converting it to a client.");
+    }
+
     const clients = readStorage(CLIENTS_KEY, []);
     const existingClient = clients.find((client) => client.sourceLeadId === id);
 
@@ -411,7 +482,7 @@ export const leadService = {
       address: lead.location || "",
       location: lead.location || "",
       preferredLocation: lead.location || "",
-      clientType: "Buyer",
+      clientType: lead.leadType || "Buyer",
       propertyType: lead.propertyType || "Single Family",
       budget: lead.budget ?? "",
       bedrooms: 0,

@@ -7,7 +7,12 @@ import {
 
 const STORAGE_KEY = 'real-estate-crm-session'
 
-const validRoles = ['Agency Admin', 'Manager/Broker', 'Agent']
+const validRoles = [
+  'Super Admin',
+  'Agency Admin',
+  'Manager/Broker',
+  'Agent',
+]
 
 function readSession() {
   try {

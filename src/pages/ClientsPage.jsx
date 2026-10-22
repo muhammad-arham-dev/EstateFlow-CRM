@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   CircleDollarSign,
+  ClipboardList,
   Clock3,
   Edit3,
   Eye,
@@ -131,7 +132,7 @@ function ClientFormModal({
       }}
     >
       <section
-        className="clients-modal"
+        className="clients-modal clients-form-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="client-modal-title"
@@ -345,10 +346,14 @@ function ClientDetail({
   onEdit,
   onDelete,
   onAddNote,
+  onAddActivity,
   isAgent,
 }) {
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [activityType, setActivityType] = useState('call')
+  const [activityText, setActivityText] = useState('')
+  const [savingActivity, setSavingActivity] = useState(false)
 
   const timeline = useMemo(
     () =>
@@ -394,6 +399,24 @@ function ClientDetail({
       setNoteText('')
     } finally {
       setSavingNote(false)
+    }
+  }
+
+  async function submitActivity(event) {
+    event.preventDefault()
+
+    if (!activityText.trim()) return
+
+    setSavingActivity(true)
+    try {
+      const saved = await onAddActivity(
+        client.id,
+        activityType,
+        `${activityType.replace('-', ' ')}: ${activityText.trim()}`,
+      )
+      if (saved) setActivityText('')
+    } finally {
+      setSavingActivity(false)
     }
   }
 
@@ -615,6 +638,47 @@ function ClientDetail({
                     Add note
                   </>
                 )}
+              </button>
+            </form>
+          </section>
+
+          <section className="clients-panel clients-note-panel">
+            <div className="clients-panel-heading">
+              <div>
+                <h2>Log an interaction</h2>
+                <p>Add a call, email, appointment, or other history item.</p>
+              </div>
+              <ClipboardList size={19} />
+            </div>
+
+            <form className="clients-note-form clients-activity-form" onSubmit={submitActivity}>
+              <label htmlFor="client-activity-type">Interaction type</label>
+              <select
+                id="client-activity-type"
+                value={activityType}
+                onChange={(event) => setActivityType(event.target.value)}
+              >
+                <option value="call">Call</option>
+                <option value="email">Email</option>
+                <option value="appointment">Appointment</option>
+                <option value="property-viewing">Property viewed</option>
+                <option value="follow-up">Follow-up</option>
+                <option value="deal">Deal update</option>
+              </select>
+              <textarea
+                rows={3}
+                maxLength={2000}
+                value={activityText}
+                onChange={(event) => setActivityText(event.target.value)}
+                placeholder="Add a short summary…"
+                aria-label="Interaction summary"
+              />
+              <button
+                className="clients-primary-button"
+                type="submit"
+                disabled={!activityText.trim() || savingActivity}
+              >
+                {savingActivity ? 'Saving…' : 'Add to timeline'}
               </button>
             </form>
           </section>
@@ -946,6 +1010,23 @@ export default function ClientsPage() {
     }
   }
 
+  async function addClientActivity(id, type, text) {
+    try {
+      await clientService.addActivity(
+        id,
+        type,
+        text,
+        user?.name || 'EstateFlow user',
+      )
+      await loadClients()
+      toast.success('Interaction added to client timeline.')
+      return true
+    } catch (error) {
+      toast.error(error.message || 'Unable to add this interaction.')
+      return false
+    }
+  }
+
   function resetFilters() {
     setSearch('')
     setTypeFilter('All types')
@@ -1012,6 +1093,7 @@ export default function ClientsPage() {
           onEdit={openEdit}
           onDelete={deleteClient}
           onAddNote={addNote}
+          onAddActivity={addClientActivity}
           isAgent={isAgent}
         />
 

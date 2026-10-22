@@ -32,8 +32,15 @@ const LeadsPage = lazy(
 const ClientsPage = lazy(
   () => import('../pages/ClientsPage'),
 )
+const PropertiesPage = lazy(
+  () => import('../pages/PropertiesPage'),
+)
+const SalesWorkflowPage = lazy(
+  () => import('../pages/SalesWorkflowPage'),
+)
 
 const managementRoles = [
+  'Super Admin',
   'Agency Admin',
   'Manager/Broker',
 ]
@@ -203,11 +210,26 @@ export default function AppRoutes() {
                 element={<ClientsPage />}
               />
 
+              <Route
+                path="properties"
+                element={<PropertiesPage />}
+              />
+
+              <Route
+                path="properties/:propertyId"
+                element={<PropertiesPage />}
+              />
+
+              <Route path="pipeline" element={<SalesWorkflowPage />} />
+              <Route path="deals" element={<SalesWorkflowPage />} />
+              <Route path="tasks" element={<SalesWorkflowPage />} />
+              <Route path="appointments" element={<SalesWorkflowPage />} />
+
               {/* Remaining modules */}
               {modules
                 .filter(
                   (module) =>
-                    !['leads', 'clients'].includes(
+                    !['leads', 'clients', 'properties', 'pipeline', 'deals', 'tasks', 'appointments'].includes(
                       module.path,
                     ),
                 )

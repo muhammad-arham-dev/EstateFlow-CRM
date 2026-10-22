@@ -359,11 +359,21 @@ export const clientService = {
       throw new Error('Client not found.')
     }
 
-    const updated = withActivity(
-      existing,
-      type,
-      `${text} (${author})`,
-    )
+    const timestamp = new Date().toISOString()
+    const updated = {
+      ...existing,
+      activities: [
+        {
+          id: makeId('activity'),
+          type,
+          text: text.trim(),
+          author,
+          createdAt: timestamp,
+        },
+        ...(existing.activities || []),
+      ],
+      updatedAt: timestamp,
+    }
 
     writeStorage(
       clients.map((client) =>

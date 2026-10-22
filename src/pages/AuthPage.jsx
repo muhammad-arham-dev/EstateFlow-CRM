@@ -4,7 +4,12 @@ import { useAuth } from '../features/auth/AuthContext'
 import { Building2 } from 'lucide-react'
 import '../styles/auth.css'
 
-const roleOptions = ['Agency Admin', 'Manager/Broker', 'Agent']
+const roleOptions = [
+  'Super Admin',
+  'Agency Admin',
+  'Manager/Broker',
+  'Agent',
+]
 
 const screenContent = {
   login: {
