@@ -1,3 +1,5 @@
+import { dispatchDataChanged } from '../../utils/appEvents'
+
 const CLIENTS_KEY = 'estateflow_clients_v1'
 
 export const CLIENT_TYPES = [
@@ -156,6 +158,7 @@ function readStorage() {
 
 function writeStorage(clients) {
   localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients))
+  dispatchDataChanged()
 }
 
 function makeId(prefix = 'client') {

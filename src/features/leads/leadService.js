@@ -1,3 +1,5 @@
+import { dispatchDataChanged } from '../../utils/appEvents'
+
 const LEADS_KEY = "estateflow_leads_v1";
 const CLIENTS_KEY = "estateflow_clients_v1";
 
@@ -285,6 +287,7 @@ function readStorage(key, fallback) {
 
 function writeStorage(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+  dispatchDataChanged()
 }
 
 function makeId(prefix) {

@@ -41,3 +41,17 @@ stay in sync across both screens. Deals, tasks, and appointments can be linked
 to lead/client contacts, assigned to an agent, searched, filtered, and updated.
 These workflow records support local notes and activity histories. Agent views
 are limited to records assigned to the signed-in demo agent.
+
+## Dashboard, reports, calendar, and notifications
+
+The dashboard KPIs, charts, recent activity, and follow-up list are calculated
+from the saved CRM records. Reports include period filters, lead status/source
+breakdowns, deal-stage totals, and agent performance. The appointments page
+includes a month calendar and per-appointment reminder choices. In-app
+notifications combine recent record activity with due lead/task follow-ups and
+appointment reminders; read and dismissed state is saved in local storage.
+
+This remains a frontend-only demo: in-app reminders are evaluated while the
+workspace is open, and there is no email delivery or background scheduler.
+Email notifications, Celery, and Redis require the backend services described
+in the roadmap and are not represented as active features here.

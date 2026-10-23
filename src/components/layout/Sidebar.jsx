@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { Building2, ChevronLeft, X } from 'lucide-react'
 import { navigationItems } from '../../utils/navigation'
 import { useAuth } from '../../features/auth/AuthContext'
+import { useUnreadNotificationCount } from '../../features/notifications/useUnreadNotificationCount'
 
 const hiddenForAgents = new Set(['/agents', '/reports'])
 
@@ -12,6 +13,7 @@ export default function Sidebar({
   onToggleCollapse,
 }) {
   const { user } = useAuth()
+  const unreadCount = useUnreadNotificationCount()
 
   const visibleItems = navigationItems.filter((item) => {
     if (user?.role === 'Agent' && hiddenForAgents.has(item.path)) {
@@ -72,9 +74,11 @@ export default function Sidebar({
               }
             >
               <Icon size={19} strokeWidth={1.8} />
-              {!collapsed && <span>{label}</span>}
-              {label === "Notifications" && !collapsed && (
-                <span className="nav-count">3</span>
+              {!collapsed && <span className="nav-link-label">{label}</span>}
+              {path === '/notifications' && unreadCount > 0 && (
+                <span className="nav-count nav-count-unread" aria-label={`${unreadCount} unread notifications`}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
               )}
             </NavLink>
           ))}

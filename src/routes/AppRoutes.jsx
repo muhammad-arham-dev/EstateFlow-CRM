@@ -38,6 +38,12 @@ const PropertiesPage = lazy(
 const SalesWorkflowPage = lazy(
   () => import('../pages/SalesWorkflowPage'),
 )
+const ReportsPage = lazy(
+  () => import('../pages/ReportsPage'),
+)
+const NotificationsPage = lazy(
+  () => import('../pages/NotificationsPage'),
+)
 
 const managementRoles = [
   'Super Admin',
@@ -224,6 +230,15 @@ export default function AppRoutes() {
               <Route path="deals" element={<SalesWorkflowPage />} />
               <Route path="tasks" element={<SalesWorkflowPage />} />
               <Route path="appointments" element={<SalesWorkflowPage />} />
+              <Route
+                path="reports"
+                element={
+                  <RoleRoute allowedRoles={managementRoles}>
+                    <ReportsPage />
+                  </RoleRoute>
+                }
+              />
+              <Route path="notifications" element={<NotificationsPage />} />
 
               {/* Remaining modules */}
               {modules

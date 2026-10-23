@@ -1,3 +1,5 @@
+import { dispatchDataChanged } from '../../utils/appEvents'
+
 const PROPERTIES_KEY = 'estateflow_properties_v1'
 
 export const PROPERTY_TYPES = [
@@ -122,6 +124,7 @@ function readStorage() {
 function writeStorage(properties) {
   try {
     localStorage.setItem(PROPERTIES_KEY, JSON.stringify(properties))
+    dispatchDataChanged()
   } catch {
     throw new Error('Unable to save property records in this browser.')
   }

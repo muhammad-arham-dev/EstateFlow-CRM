@@ -1,7 +1,6 @@
+import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowDownRight,
   ArrowRight,
-  ArrowUpRight,
   CalendarClock,
   CheckCircle2,
   CircleDollarSign,
@@ -25,51 +24,20 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { useAuth } from '../features/auth/AuthContext'
-
-const stats = [
-  { label: 'Total leads', value: '1,284', change: '+12.8%', trend: 'up', note: 'vs. last month', icon: Users, color: 'blue', path: '/leads' },
-  { label: 'Active clients', value: '384', change: '+8.2%', trend: 'up', note: 'vs. last month', icon: Users, color: 'violet', path: '/clients' },
-  { label: 'Active properties', value: '246', change: '+5.4%', trend: 'up', note: 'vs. last month', icon: House, color: 'green', path: '/properties' },
-  { label: 'Open deals', value: '58', change: '-2.4%', trend: 'down', note: 'vs. last month', icon: CircleDollarSign, color: 'orange', path: '/deals' },
-]
-
-const leadTrend = [
-  { month: 'May', leads: 72, converted: 24 },
-  { month: 'Jun', leads: 88, converted: 31 },
-  { month: 'Jul', leads: 76, converted: 27 },
-  { month: 'Aug', leads: 105, converted: 39 },
-  { month: 'Sep', leads: 92, converted: 34 },
-  { month: 'Oct', leads: 124, converted: 46 },
-]
-
-const pipeline = [
-  { stage: 'New Lead', count: 24, color: '#7C9BF4' },
-  { stage: 'Qualified', count: 18, color: '#9478E8' },
-  { stage: 'Viewing', count: 12, color: '#E6A65B' },
-  { stage: 'Negotiation', count: 9, color: '#5CB8A5' },
-  { stage: 'Under Contract', count: 6, color: '#5184D8' },
-]
-
-const sources = [
-  { name: 'Zillow', value: 34, color: '#6687E8' },
-  { name: 'Referral', value: 26, color: '#65B7A5' },
-  { name: 'Website', value: 21, color: '#A28AE8' },
-  { name: 'Realtor.com', value: 12, color: '#E9AE67' },
-  { name: 'Other', value: 7, color: '#B9C1CF' },
-]
-
-const activities = [
-  { initials: 'JM', color: 'avatar-blue', title: 'Jordan Miller', action: 'was qualified as a lead', time: '12 min ago', type: 'Lead' },
-  { initials: 'SC', color: 'avatar-purple', title: 'Sophia Carter', action: 'scheduled a property viewing', time: '38 min ago', type: 'Appointment' },
-  { initials: 'DW', color: 'avatar-green', title: 'Daniel Wilson', action: 'moved a deal to Negotiation', time: '1 hr ago', type: 'Deal' },
-  { initials: 'ER', color: 'avatar-orange', title: 'Emma Roberts', action: 'added a new property listing', time: '2 hrs ago', type: 'Property' },
-]
-
-const tasks = [
-  { title: 'Follow up with Olivia Martinez', meta: 'Lead · Call', time: '10:30 AM', priority: 'High' },
-  { title: 'Prepare offer for Oak Street', meta: 'Deal · Document review', time: '12:00 PM', priority: 'Medium' },
-  { title: 'Confirm viewing with James Lee', meta: 'Appointment · Follow-up', time: '2:30 PM', priority: 'High' },
-]
+import { clientService } from '../features/clients/clientService'
+import { leadService } from '../features/leads/leadService'
+import { propertyService } from '../features/properties/propertyService'
+import {
+  appointmentService,
+  dealService,
+  taskService,
+} from '../features/workflow/workflowService'
+import {
+  getDealPipeline,
+  getLeadSources,
+  getLeadTrend,
+  getRecentActivity,
+} from '../features/reports/reportData'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -78,14 +46,103 @@ const currency = new Intl.NumberFormat('en-US', {
 })
 
 export default function DashboardPage() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [chartRange, setChartRange] = useState(6)
+  const [records, setRecords] = useState(null)
+  const [loadError, setLoadError] = useState('')
 
-  const firstName = user?.name?.trim().split(/\s+/)[0] || "there";
+  useEffect(() => {
+    let cancelled = false
+    let requestId = 0
+    const loadDashboardData = () => {
+      const currentRequestId = ++requestId
+      Promise.all([
+        leadService.getAll(),
+        clientService.getAll(),
+        propertyService.getAll(),
+        dealService.getAll(),
+        taskService.getAll(),
+        appointmentService.getAll(),
+      ])
+        .then(([leads, clients, properties, deals, tasks, appointments]) => {
+          if (!cancelled && currentRequestId === requestId) {
+            setRecords({ leads, clients, properties, deals, tasks, appointments })
+            setLoadError('')
+          }
+        })
+        .catch((error) => {
+          if (!cancelled && currentRequestId === requestId) {
+            setLoadError(error.message || 'Unable to load dashboard data.')
+          }
+        })
+    }
 
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    loadDashboardData()
+    window.addEventListener('estateflow:data-changed', loadDashboardData)
+    return () => {
+      cancelled = true
+      window.removeEventListener('estateflow:data-changed', loadDashboardData)
+    }
+  }, [])
+
+  const isAgent = user?.role === 'Agent'
+  const data = useMemo(() => {
+    if (!records) return null
+    const assigned = (collection) => collection.filter(
+      (record) => !isAgent || record.assignedTo === user?.name,
+    )
+    const leads = assigned(records.leads)
+    const clients = assigned(records.clients)
+    const properties = assigned(records.properties)
+    const deals = assigned(records.deals)
+    const tasks = assigned(records.tasks)
+    const appointments = assigned(records.appointments)
+    const openDeals = deals.filter((deal) => !['Closed Won', 'Closed Lost'].includes(deal.stage))
+    const closedWonDeals = deals.filter((deal) => deal.stage === 'Closed Won')
+    const closedRevenue = closedWonDeals
+      .reduce((total, deal) => total + Number(deal.amount || 0), 0)
+    const today = format(new Date(), 'yyyy-MM-dd')
+    const followUps = tasks
+      .filter((task) => task.status !== 'Completed')
+      .sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999'))
+      .slice(0, 3)
+    const activityCollections = [
+      { records: leads, type: 'Lead' },
+      { records: clients, type: 'Client' },
+      { records: properties, type: 'Property' },
+      { records: deals, type: 'Deal' },
+      { records: tasks, type: 'Task' },
+      { records: appointments, type: 'Appointment' },
+    ]
+    return {
+      leads,
+      clients,
+      properties,
+      deals,
+      tasks,
+      appointments,
+      openDeals,
+      leadTrend: getLeadTrend(leads, chartRange),
+      pipeline: getDealPipeline(openDeals).filter((stage) => stage.count),
+      sources: getLeadSources(leads),
+      activities: getRecentActivity(activityCollections),
+      followUps,
+      todayFollowUps: tasks.filter((task) => task.status !== 'Completed' && task.dueDate && task.dueDate <= today).length,
+      closedRevenue,
+      closedDealCount: closedWonDeals.length,
+    }
+  }, [records, isAgent, user?.name, chartRange])
+
+  const firstName = user?.name?.trim().split(/\s+/)[0] || 'there'
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
+  const stats = data ? [
+    { label: 'Total leads', value: data.leads.length, note: 'in your workspace', icon: Users, color: 'blue', path: '/leads' },
+    { label: 'Active clients', value: data.clients.length, note: 'in your workspace', icon: Users, color: 'violet', path: '/clients' },
+    { label: 'Active properties', value: data.properties.filter((property) => property.status === 'Available').length, note: 'currently available', icon: House, color: 'green', path: '/properties' },
+    { label: 'Open deals', value: data.openDeals.length, note: 'in your pipeline', icon: CircleDollarSign, color: 'orange', path: '/deals' },
+  ] : []
 
   return (
     <div className="dashboard-page">
@@ -114,7 +171,6 @@ export default function DashboardPage() {
       <section className="stats-grid" aria-label="Business overview">
         {stats.map((stat) => {
           const Icon = stat.icon;
-          const TrendIcon = stat.trend === "up" ? ArrowUpRight : ArrowDownRight;
 
           return (
             <button
@@ -126,12 +182,7 @@ export default function DashboardPage() {
                 <span className={`stat-icon stat-icon-${stat.color}`}>
                   <Icon size={19} />
                 </span>
-                <span
-                  className={`stat-change ${stat.trend === "up" ? "change-up" : "change-down"}`}
-                >
-                  <TrendIcon size={14} />
-                  {stat.change}
-                </span>
+                <span className="stat-change change-up">Live</span>
               </div>
               <span className="stat-label">{stat.label}</span>
               <strong className="stat-value">{stat.value}</strong>
@@ -141,12 +192,15 @@ export default function DashboardPage() {
         })}
       </section>
 
+      {loadError && <p className="dashboard-load-error" role="alert">{loadError}</p>}
+      {!data && !loadError && <p className="dashboard-loading" role="status">Loading your workspace data…</p>}
+
       <section className="insight-banner">
         <div className="insight-icon">
           <CalendarClock size={21} />
         </div>
         <div className="insight-copy">
-          <strong>You have 3 follow-ups that need attention today</strong>
+          <strong>{!data ? 'Loading follow-ups…' : data.todayFollowUps ? `You have ${data.todayFollowUps} follow-ups that need attention today` : 'No follow-ups are due today'}</strong>
           <span>
             Staying consistent with follow-ups helps keep opportunities moving.
           </span>
@@ -165,12 +219,12 @@ export default function DashboardPage() {
             </div>
             <select
               className="period-select"
-              defaultValue="6months"
+              value={chartRange}
+              onChange={(event) => setChartRange(Number(event.target.value))}
               aria-label="Lead chart time range"
             >
-              <option value="6months">Last 6 months</option>
-              <option value="30days">Last 30 days</option>
-              <option value="year">This year</option>
+              <option value={6}>Last 6 months</option>
+              <option value={12}>Last 12 months</option>
             </select>
           </div>
 
@@ -186,7 +240,7 @@ export default function DashboardPage() {
           <div className="chart-area">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={leadTrend}
+                data={data?.leadTrend || []}
                 margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
               >
                 <defs>
@@ -266,12 +320,12 @@ export default function DashboardPage() {
           </div>
 
           <div className="pipeline-total">
-            <strong>69</strong>
-            <span>active opportunities</span>
+            <strong>{data?.openDeals.length || 0}</strong>
+            <span>Active Opportunities</span>
           </div>
 
           <div className="pipeline-bars">
-            {pipeline.map((item) => (
+            {(data?.pipeline || []).map((item) => (
               <div className="pipeline-row" key={item.stage}>
                 <div className="pipeline-row-label">
                   <span>{item.stage}</span>
@@ -281,7 +335,7 @@ export default function DashboardPage() {
                   <span
                     className="pipeline-fill"
                     style={{
-                      width: `${(item.count / 24) * 100}%`,
+                      width: `${Math.max(8, (item.count / Math.max(1, ...data.pipeline.map((stage) => stage.count))) * 100)}%`,
                       background: item.color,
                     }}
                   />
@@ -315,19 +369,19 @@ export default function DashboardPage() {
           </div>
 
           <div className="activity-list">
-            {activities.map((activity) => (
+            {(data?.activities || []).map((activity) => (
               <div
                 className="activity-item"
-                key={`${activity.title}-${activity.type}`}
+                key={`${activity.id}-${activity.type}`}
               >
-                <div className={`avatar ${activity.color}`}>
-                  {activity.initials}
+                <div className={`avatar avatar-${activity.type.toLowerCase()}`}>
+                  {(activity.recordName || 'U').split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}
                 </div>
                 <div className="activity-content">
                   <p>
-                    <strong>{activity.title}</strong> {activity.action}
+                    <strong>{activity.recordName}</strong> {activity.text}
                   </p>
-                  <span>{activity.time}</span>
+                  <span>{format(new Date(activity.createdAt), 'MMM d, h:mm a')}</span>
                 </div>
                 <span
                   className={`activity-type type-${activity.type.toLowerCase()}`}
@@ -365,7 +419,7 @@ export default function DashboardPage() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={sources}
+                  data={data?.sources || []}
                   dataKey="value"
                   nameKey="name"
                   innerRadius={54}
@@ -373,7 +427,7 @@ export default function DashboardPage() {
                   paddingAngle={3}
                   stroke="none"
                 >
-                  {sources.map((source) => (
+                  {(data?.sources || []).map((source) => (
                     <Cell key={source.name} fill={source.color} />
                   ))}
                 </Pie>
@@ -381,13 +435,13 @@ export default function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="source-chart-center">
-              <strong>100%</strong>
-              <span>Total leads</span>
+              <strong>{data?.leads.length || 0}</strong>
+              <span>Leads</span>
             </div>
           </div>
 
           <div className="source-legend">
-            {sources.map((source) => (
+            {(data?.sources || []).map((source) => (
               <div className="source-legend-row" key={source.name}>
                 <span className="source-legend-name">
                   <i style={{ background: source.color }} />
@@ -415,14 +469,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="task-list">
-          {tasks.map((task) => (
-            <div className="task-row" key={task.title}>
+          {(data?.followUps || []).map((task) => (
+          <div className="task-row" key={task.id}>
               <span className="task-check">
                 <CheckCircle2 size={19} />
               </span>
               <div className="task-info">
                 <strong>{task.title}</strong>
-                <span>{task.meta}</span>
+                <span>{task.contactName || 'No contact'} · {task.type}</span>
               </div>
               <span
                 className={`priority-pill priority-${task.priority.toLowerCase()}`}
@@ -430,7 +484,7 @@ export default function DashboardPage() {
                 {task.priority}
               </span>
               <span className="task-time">
-                <Clock3 size={14} /> {task.time}
+                <Clock3 size={14} /> {task.dueDate || 'No due date'}
               </span>
               <button
                 className="icon-button task-open"
@@ -449,13 +503,12 @@ export default function DashboardPage() {
           <CircleDollarSign size={22} />
         </div>
         <div>
-          <span>Closed revenue this month</span>
-          <strong>{currency.format(428500)}</strong>
+          <span>Closed revenue (all time)</span>
+          <strong>{currency.format(data?.closedRevenue || 0)}</strong>
         </div>
         <div className="revenue-strip-growth">
-          <ArrowUpRight size={16} />
-          <strong>18.6%</strong>
-          <span>vs. last month</span>
+          <strong>{data?.closedDealCount || 0}</strong>
+          <span>closed deals</span>
         </div>
         <button className="text-action" onClick={() => navigate("/reports")}>
           Revenue report <ArrowRight size={15} />

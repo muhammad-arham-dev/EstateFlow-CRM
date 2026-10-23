@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
+  addDays,
+  addMonths,
+  format,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns'
+import {
   CalendarDays,
   Check,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Edit3,
   Eye,
@@ -90,6 +100,7 @@ const emptyForms = {
     location: '',
     status: 'Scheduled',
     assignedTo: AGENTS[0],
+    reminder: '1 day before',
   },
 }
 
@@ -287,6 +298,7 @@ function WorkflowForm({ type, form, setForm, contacts, agents, onClose, onSubmit
           field('startsAt', 'Date and time', { inputType: 'datetime-local', required: true }),
           field('location', 'Location'),
           field('status', 'Status', { choices: APPOINTMENT_STATUSES }),
+          field('reminder', 'Reminder', { choices: ['None', 'At appointment time', '15 minutes before', '1 hour before', '1 day before'] }),
           field('assignedTo', 'Assigned agent', { choices: agents }),
         ]
 
@@ -320,7 +332,7 @@ function RecordDetails({ type, record, onClose, onEdit, onDelete, onAddNote, not
     ? [['Contact', record.contactName || 'Not linked'], ['Property', record.propertyName || 'Not specified'], ['Value', formatCurrency(record.amount)], ['Stage', record.stage], ['Expected close', formatDate(record.closeDate)], ['Assigned to', record.assignedTo]]
     : type === 'tasks'
       ? [['Contact', record.contactName || 'Not linked'], ['Type', record.type], ['Priority', record.priority], ['Status', record.status], ['Due date', formatDate(record.dueDate)], ['Assigned to', record.assignedTo]]
-      : [['Contact', record.contactName || 'Not linked'], ['Type', record.type], ['Date', formatDateTime(record.startsAt)], ['Location', record.location || 'Not specified'], ['Status', record.status], ['Assigned to', record.assignedTo]]
+      : [['Contact', record.contactName || 'Not linked'], ['Type', record.type], ['Date', formatDateTime(record.startsAt)], ['Location', record.location || 'Not specified'], ['Reminder', record.reminder || '1 day before'], ['Status', record.status], ['Assigned to', record.assignedTo]]
 
   return (
     <div className="workflow-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -410,6 +422,67 @@ function PipelineBoard({ leads, onMove, onOpenLead }) {
   )
 }
 
+function AppointmentCalendar({ appointments, onOpenAppointment }) {
+  const [month, setMonth] = useState(() => startOfMonth(new Date()))
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const firstDay = startOfWeek(startOfMonth(month))
+  const days = Array.from({ length: 42 }, (_, index) => addDays(firstDay, index))
+  const selectedAppointments = appointments
+    .filter((appointment) => appointment.startsAt?.slice(0, 10) === selectedDate)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+
+  function changeMonth(amount) {
+    const nextMonth = addMonths(month, amount)
+    setMonth(nextMonth)
+    setSelectedDate(format(startOfMonth(nextMonth), 'yyyy-MM-dd'))
+  }
+
+  return (
+    <section className="workflow-calendar">
+      <header className="workflow-calendar-header">
+        <div><h2>Appointment calendar</h2><p>Choose a day to review scheduled appointments.</p></div>
+        <div className="workflow-calendar-controls">
+          <button type="button" className="workflow-icon-button" onClick={() => changeMonth(-1)} aria-label="Previous month"><ChevronLeft size={16} /></button>
+          <strong>{format(month, 'MMMM yyyy')}</strong>
+          <button type="button" className="workflow-icon-button" onClick={() => changeMonth(1)} aria-label="Next month"><ChevronRight size={16} /></button>
+        </div>
+      </header>
+
+      <div className="workflow-calendar-grid" role="grid" aria-label={format(month, 'MMMM yyyy')}>
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <span className="workflow-calendar-weekday" key={day}>{day}</span>)}
+        {days.map((day) => {
+          const dateKey = format(day, 'yyyy-MM-dd')
+          const count = appointments.filter((appointment) => appointment.startsAt?.slice(0, 10) === dateKey).length
+          return (
+            <button
+              className={`workflow-calendar-day ${isSameMonth(day, month) ? '' : 'is-outside-month'} ${count ? 'has-appointments' : ''} ${dateKey === selectedDate ? 'is-selected' : ''}`}
+              type="button"
+              key={dateKey}
+              onClick={() => setSelectedDate(dateKey)}
+              aria-pressed={dateKey === selectedDate}
+              aria-label={`${format(day, 'MMMM d, yyyy')}${count ? `, ${count} appointments` : ''}`}
+            >
+              <span className="workflow-calendar-date">{format(day, 'd')}</span>
+              {count > 0 && <strong>{count} {count === 1 ? 'Appointment' : 'Appointments'}</strong>}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="workflow-calendar-agenda">
+        <h3>{format(new Date(`${selectedDate}T12:00:00`), 'EEEE, MMMM d')}</h3>
+        {selectedAppointments.length ? selectedAppointments.map((appointment) => (
+          <button className="workflow-calendar-event" key={appointment.id} type="button" onClick={() => onOpenAppointment(appointment)}>
+            <span>{format(new Date(appointment.startsAt), 'h:mm a')}</span>
+            <strong>{appointment.title}</strong>
+            <small>{appointment.contactName || appointment.type}</small>
+          </button>
+        )) : <p>No appointments scheduled for this day.</p>}
+      </div>
+    </section>
+  )
+}
+
 export default function SalesWorkflowPage() {
   const location = useLocation()
   const { user } = useAuth()
@@ -486,6 +559,10 @@ export default function SalesWorkflowPage() {
     return !query || [record.title, record.contactName, record.propertyName, record.assignedTo, record.type].some((value) => String(value || '').toLowerCase().includes(query))
   }), [sourceRecords, isAgent, user?.name, filter, search])
   const visibleLeads = useMemo(() => leads.filter((lead) => !isAgent || lead.assignedTo === user?.name), [leads, isAgent, user?.name])
+  const visibleAppointments = useMemo(
+    () => appointments.filter((appointment) => !isAgent || appointment.assignedTo === user?.name),
+    [appointments, isAgent, user?.name],
+  )
   const leadFollowUps = useMemo(() => visibleLeads.filter((lead) => lead.followUpDate).sort((a, b) => a.followUpDate.localeCompare(b.followUpDate)), [visibleLeads])
 
   const stats = view.key === 'pipeline'
@@ -665,6 +742,15 @@ export default function SalesWorkflowPage() {
           <div className="workflow-stats">
             {stats.map(({ label, value, icon: Icon, tone }) => <article className="workflow-stat-card" key={label}><span className={`workflow-stat-icon workflow-tone-${tone}`}><Icon size={18} /></span><div><small>{label}</small><strong>{value}</strong></div></article>)}
           </div>
+          {view.key === 'appointments' && (
+            <AppointmentCalendar
+              appointments={visibleAppointments}
+              onOpenAppointment={(appointment) => {
+                setSelectedRecord(appointment)
+                setNote('')
+              }}
+            />
+          )}
           {view.key === 'pipeline' ? (
             <>
               <div className="workflow-section-bar"><div><h2>Lead pipeline</h2><p>Drag leads between stages or use the stage selector.</p></div><span>{visibleLeads.length} leads</span></div>

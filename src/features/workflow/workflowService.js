@@ -1,3 +1,5 @@
+import { dispatchDataChanged } from '../../utils/appEvents'
+
 const STORAGE_KEYS = {
   deals: 'estateflow_deals_v1',
   tasks: 'estateflow_tasks_v1',
@@ -189,6 +191,7 @@ function readRecords(key, seed) {
 function writeRecords(key, records) {
   try {
     localStorage.setItem(key, JSON.stringify(records))
+    dispatchDataChanged()
   } catch {
     throw new Error('Unable to save workflow data. Check available browser storage.')
   }

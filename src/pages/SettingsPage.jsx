@@ -63,7 +63,7 @@ export default function SettingsPage() {
     <section className="settings-page">
       <div className="settings-page-heading">
         <div>
-          <h1>Settings</h1>
+          <b><h1>Settings</h1></b>
           <p>Manage your account details and security preferences.</p>
         </div>
       </div>

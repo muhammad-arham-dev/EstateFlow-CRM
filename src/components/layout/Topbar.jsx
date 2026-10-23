@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../../features/auth/AuthContext'
+import { useUnreadNotificationCount } from '../../features/notifications/useUnreadNotificationCount'
 
 function getInitials(name = '') {
   return name
@@ -30,6 +31,7 @@ export default function Topbar({ onMenuClick }) {
 
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const unreadCount = useUnreadNotificationCount()
 
   function handleSearch(event) {
     event.preventDefault()
@@ -140,11 +142,11 @@ export default function Topbar({ onMenuClick }) {
         <button
           className="icon-button notification-button"
           onClick={() => navigate("/notifications")}
-          aria-label="Open notifications"
-          title="Notifications"
+          aria-label={`Open notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
+          title={unreadCount ? `${unreadCount} unread notifications` : 'Notifications'}
         >
           <Bell size={19} />
-          <span className="notification-dot" />
+          {unreadCount > 0 && <span className="notification-count-badge">{unreadCount}</span>}
         </button>
 
         <div className="profile-menu-wrap">
