@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../features/auth/AuthContext'
+import { useAgentOptions } from '../features/agents/useAgentOptions'
 import {
   clientService,
   CLIENT_AGENTS,
@@ -720,14 +721,12 @@ function ClientDetail({
 
 export default function ClientsPage() {
   const { clientId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const isAgent = user?.role === 'Agent'
 
-  const agents =
-    user?.name && !CLIENT_AGENTS.includes(user.name)
-      ? [...CLIENT_AGENTS, user.name]
-      : CLIENT_AGENTS
+  const agents = useAgentOptions(user?.role === 'Agent' ? user.name : '')
 
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
@@ -871,17 +870,26 @@ export default function ClientsPage() {
     ]
   }, [clients, isAgent, user?.name])
 
-  function openCreate() {
+  const openCreate = useCallback(() => {
     setEditingClient(null)
     setForm({
       ...emptyForm,
       assignedTo: isAgent
         ? user?.name || CLIENT_AGENTS[0]
-        : agents[0] || '',
+        : agents[0] || CLIENT_AGENTS[0],
     })
     setFormError('')
     setModalOpen(true)
-  }
+  }, [agents, isAgent, user, setEditingClient, setForm, setFormError, setModalOpen])
+
+  useEffect(() => {
+    if (!location.state?.quickAdd) return
+    const timeout = window.setTimeout(() => {
+      openCreate()
+      navigate(location.pathname, { replace: true, state: null })
+    })
+    return () => window.clearTimeout(timeout)
+  }, [location.pathname, location.state, navigate, openCreate])
 
   function openEdit(client) {
     setEditingClient(client)

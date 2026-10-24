@@ -1,4 +1,4 @@
-import { dispatchDataChanged } from '../../utils/appEvents'
+import { dispatchDataChanged } from '../../utils/appEvents.js'
 
 const STORAGE_KEYS = {
   deals: 'estateflow_deals_v1',

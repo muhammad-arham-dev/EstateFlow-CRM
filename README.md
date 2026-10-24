@@ -19,6 +19,7 @@ Other available checks:
 ```sh
 npm run lint
 npm run build
+npm test
 npm run preview
 ```
 
@@ -46,12 +47,22 @@ are limited to records assigned to the signed-in demo agent.
 
 The dashboard KPIs, charts, recent activity, and follow-up list are calculated
 from the saved CRM records. Reports include period filters, lead status/source
-breakdowns, deal-stage totals, and agent performance. The appointments page
+breakdowns, deal-stage totals, and agent performance. The Agents page provides
+a searchable local directory, performance overview, and agent assignment
+options. The appointments page
 includes a month calendar and per-appointment reminder choices. In-app
 notifications combine recent record activity with due lead/task follow-ups and
 appointment reminders; read and dismissed state is saved in local storage.
+
+Workspace search looks across leads, clients, properties, deals, tasks, and
+appointments, and opens matching records in their respective modules. Quick
+Add opens the corresponding record form. The Agents page summarizes assignment
+and performance data from the local CRM records; it does not create login
+accounts or send invitations.
 
 This remains a frontend-only demo: in-app reminders are evaluated while the
 workspace is open, and there is no email delivery or background scheduler.
 Email notifications, Celery, and Redis require the backend services described
 in the roadmap and are not represented as active features here.
+Password changes and account invitations likewise require a backend; the UI
+identifies these operations as unavailable instead of reporting false success.

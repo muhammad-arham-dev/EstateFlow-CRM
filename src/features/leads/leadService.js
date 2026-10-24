@@ -1,4 +1,4 @@
-import { dispatchDataChanged } from '../../utils/appEvents'
+import { dispatchDataChanged } from '../../utils/appEvents.js'
 
 const LEADS_KEY = "estateflow_leads_v1";
 const CLIENTS_KEY = "estateflow_clients_v1";

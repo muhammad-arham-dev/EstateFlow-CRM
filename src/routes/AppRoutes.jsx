@@ -44,6 +44,12 @@ const ReportsPage = lazy(
 const NotificationsPage = lazy(
   () => import('../pages/NotificationsPage'),
 )
+const AgentsPage = lazy(
+  () => import('../pages/AgentsPage'),
+)
+const SearchPage = lazy(
+  () => import('../pages/SearchPage'),
+)
 
 const managementRoles = [
   'Super Admin',
@@ -196,6 +202,11 @@ export default function AppRoutes() {
               />
 
               <Route
+                path="/search"
+                element={<SearchPage />}
+              />
+
+              <Route
                 path="/settings"
                 element={<SettingsPage />}
               />
@@ -231,6 +242,14 @@ export default function AppRoutes() {
               <Route path="tasks" element={<SalesWorkflowPage />} />
               <Route path="appointments" element={<SalesWorkflowPage />} />
               <Route
+                path="agents"
+                element={
+                  <RoleRoute allowedRoles={managementRoles}>
+                    <AgentsPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
                 path="reports"
                 element={
                   <RoleRoute allowedRoles={managementRoles}>
@@ -244,7 +263,7 @@ export default function AppRoutes() {
               {modules
                 .filter(
                   (module) =>
-                    !['leads', 'clients', 'properties', 'pipeline', 'deals', 'tasks', 'appointments'].includes(
+                    !['leads', 'clients', 'properties', 'pipeline', 'deals', 'tasks', 'appointments', 'agents'].includes(
                       module.path,
                     ),
                 )

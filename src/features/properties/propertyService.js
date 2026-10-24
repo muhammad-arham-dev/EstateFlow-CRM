@@ -1,4 +1,4 @@
-import { dispatchDataChanged } from '../../utils/appEvents'
+import { dispatchDataChanged } from '../../utils/appEvents.js'
 
 const PROPERTIES_KEY = 'estateflow_properties_v1'
 

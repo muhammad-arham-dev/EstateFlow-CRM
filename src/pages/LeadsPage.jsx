@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,7 +22,9 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
+import { useAgentOptions } from '../features/agents/useAgentOptions'
 import {
   AGENTS,
   LEAD_SOURCES,
@@ -100,10 +102,11 @@ function getStatusClass(status) {
 
 
 export default function LeadsPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const { user } = useAuth();
 
-  const agentOptions =
-    user?.name && !AGENTS.includes(user.name) ? [...AGENTS, user.name] : AGENTS;
+  const agentOptions = useAgentOptions(user?.role === 'Agent' ? user.name : '')
 
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -260,15 +263,15 @@ export default function LeadsPage() {
     [leads],
   );
 
-  function openCreateModal() {
+  const openCreateModal = useCallback(() => {
     setEditingLead(null);
     setForm({
       ...emptyForm,
-      assignedTo: user?.role === "Agent" ? user.name : AGENTS[0],
+      assignedTo: user?.role === "Agent" ? user.name : agentOptions[0] || AGENTS[0],
     });
     setFormError("");
     setModalOpen(true);
-  }
+  }, [agentOptions, user, setEditingLead, setForm, setFormError, setModalOpen]);
 
   function openEditModal(lead) {
     setEditingLead(lead);
@@ -291,10 +294,28 @@ export default function LeadsPage() {
     setModalOpen(true);
   }
 
-  function openLeadDetails(lead) {
+  const openLeadDetails = useCallback((lead) => {
     setFollowUpDate(lead.followUpDate || "");
     setSelectedId(lead.id);
-  }
+  }, []);
+
+  useEffect(() => {
+    const recordId = location.state?.recordId
+    if (location.state?.quickAdd) {
+      const timeout = window.setTimeout(() => {
+        openCreateModal()
+        navigate(location.pathname, { replace: true, state: null })
+      })
+      return () => window.clearTimeout(timeout)
+    }
+    const lead = leads.find((item) => item.id === recordId)
+    if (!lead) return
+    const timeout = window.setTimeout(() => {
+      openLeadDetails(lead)
+      navigate(location.pathname, { replace: true, state: null })
+    })
+    return () => window.clearTimeout(timeout)
+  }, [leads, location.pathname, location.state, navigate, openCreateModal, openLeadDetails])
 
   function updateField(event) {
     const { name, value } = event.target;

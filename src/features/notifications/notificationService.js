@@ -1,4 +1,4 @@
-import { dispatchNotificationsChanged } from '../../utils/appEvents'
+import { dispatchNotificationsChanged } from '../../utils/appEvents.js'
 
 const STATE_KEY = 'estateflow_notification_state_v1'
 const REMINDER_WINDOW_DAYS = 7
@@ -13,7 +13,7 @@ const NOTIFICATION_AGE_RANGES = {
 export function filterNotificationsByAge(notifications, range, now = Date.now()) {
   if (range === 'upcoming') {
     return notifications.filter((notification) => {
-      const scheduledFor = new Date(notification.scheduledFor || notification.createdAt).getTime()
+      const scheduledFor = new Date(notification.scheduledFor).getTime()
       return Number.isFinite(scheduledFor) && scheduledFor > now
     })
   }
@@ -27,7 +27,7 @@ export function filterNotificationsByAge(notifications, range, now = Date.now())
     const createdAt = new Date(notification.createdAt).getTime()
     const scheduledFor = new Date(notification.scheduledFor || '').getTime()
     const isUpcoming = Number.isFinite(scheduledFor) && scheduledFor > now
-    const isRecentPast = Number.isFinite(createdAt) && createdAt >= cutoff && createdAt <= now
+    const isRecentPast = !isUpcoming && Number.isFinite(createdAt) && createdAt >= cutoff && createdAt <= now
     return (range === 'latest' && isUpcoming) || isRecentPast
   })
 }

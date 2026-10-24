@@ -42,10 +42,7 @@ export default function Topbar({ onMenuClick }) {
       return
     }
 
-    navigate(`/leads?search=${encodeURIComponent(query)}`)
-    toast.info(
-      'Search opened in Leads. Search across all records will be connected in a later sprint.',
-    )
+    navigate(`/search?q=${encodeURIComponent(query)}`)
   }
 
   const quickActions = [
@@ -59,10 +56,7 @@ export default function Topbar({ onMenuClick }) {
 
   function handleQuickAdd(path) {
     setQuickAddOpen(false)
-    navigate(path)
-    toast.info(
-      'The creation form will be available when this module is implemented.',
-    )
+    navigate(path, { state: { quickAdd: true } })
   }
 
   function openSettings(tab) {
@@ -161,7 +155,9 @@ export default function Topbar({ onMenuClick }) {
             aria-expanded={profileOpen}
           >
             <span className="avatar avatar-topbar">
-              {getInitials(user?.name)}
+              {user?.profileImage
+                ? <img src={user.profileImage} alt="" />
+                : getInitials(user?.name)}
             </span>
             <span className="profile-copy">
               <strong>{user?.name || "User"}</strong>

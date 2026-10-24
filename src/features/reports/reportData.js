@@ -31,7 +31,7 @@ export function getLeadTrend(leads, monthCount = 6, now = new Date()) {
       return createdAt >= month && createdAt < nextMonth
     })
 
-    const converted = monthLeads.filter((lead) => {
+    const converted = leads.filter((lead) => {
       if (lead.status !== 'Converted') return false
       const conversionActivity = lead.activities?.find(
         (activity) => activity.type === 'status' && /to Converted\b/.test(activity.text),
@@ -39,7 +39,8 @@ export function getLeadTrend(leads, monthCount = 6, now = new Date()) {
       return conversionActivity
         ? new Date(conversionActivity.createdAt) >= month &&
             new Date(conversionActivity.createdAt) < nextMonth
-        : true
+        : new Date(lead.createdAt) >= month &&
+            new Date(lead.createdAt) < nextMonth
     })
 
     return {

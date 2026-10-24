@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../features/auth/AuthContext'
+import { useAgentOptions } from '../features/agents/useAgentOptions'
 import {
   PROPERTY_AGENTS,
   PROPERTY_STATUSES,
@@ -608,12 +609,11 @@ function PropertyDetail({ property, onBack, onEdit, onDelete, isAgent }) {
 
 export default function PropertiesPage() {
   const { propertyId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const isAgent = user?.role === 'Agent'
-  const agents = user?.name && !PROPERTY_AGENTS.includes(user.name)
-    ? [...PROPERTY_AGENTS, user.name]
-    : PROPERTY_AGENTS
+  const agents = useAgentOptions(user?.role === 'Agent' ? user.name : '')
 
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(true)
@@ -749,15 +749,24 @@ export default function PropertiesPage() {
     [scopedProperties],
   )
 
-  function openCreate() {
+  const openCreate = useCallback(() => {
     setEditingProperty(null)
     setForm({
       ...emptyForm,
-      assignedTo: isAgent ? user?.name || PROPERTY_AGENTS[0] : agents[0],
+      assignedTo: isAgent ? user?.name || PROPERTY_AGENTS[0] : agents[0] || PROPERTY_AGENTS[0],
     })
     setFormError('')
     setModalOpen(true)
-  }
+  }, [agents, isAgent, user, setEditingProperty, setForm, setFormError, setModalOpen])
+
+  useEffect(() => {
+    if (!location.state?.quickAdd) return
+    const timeout = window.setTimeout(() => {
+      openCreate()
+      navigate(location.pathname, { replace: true, state: null })
+    })
+    return () => window.clearTimeout(timeout)
+  }, [location.pathname, location.state, navigate, openCreate])
 
   function openEdit(property) {
     setEditingProperty(property)

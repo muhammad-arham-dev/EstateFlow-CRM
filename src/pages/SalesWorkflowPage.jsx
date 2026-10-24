@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   addDays,
   addMonths,
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../features/auth/AuthContext'
+import { useAgentOptions } from '../features/agents/useAgentOptions'
 import { clientService } from '../features/clients/clientService'
 import { AGENTS, LEAD_STATUSES, leadService } from '../features/leads/leadService'
 import {
@@ -427,7 +428,10 @@ function AppointmentCalendar({ appointments, onOpenAppointment }) {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const firstDay = startOfWeek(startOfMonth(month))
   const days = Array.from({ length: 42 }, (_, index) => addDays(firstDay, index))
-  const selectedAppointments = appointments
+  const calendarAppointments = appointments.filter(
+    (appointment) => appointment.status !== 'Completed',
+  )
+  const selectedAppointments = calendarAppointments
     .filter((appointment) => appointment.startsAt?.slice(0, 10) === selectedDate)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
 
@@ -452,7 +456,7 @@ function AppointmentCalendar({ appointments, onOpenAppointment }) {
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <span className="workflow-calendar-weekday" key={day}>{day}</span>)}
         {days.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd')
-          const count = appointments.filter((appointment) => appointment.startsAt?.slice(0, 10) === dateKey).length
+          const count = calendarAppointments.filter((appointment) => appointment.startsAt?.slice(0, 10) === dateKey).length
           return (
             <button
               className={`workflow-calendar-day ${isSameMonth(day, month) ? '' : 'is-outside-month'} ${count ? 'has-appointments' : ''} ${dateKey === selectedDate ? 'is-selected' : ''}`}
@@ -485,10 +489,11 @@ function AppointmentCalendar({ appointments, onOpenAppointment }) {
 
 export default function SalesWorkflowPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const view = views[location.pathname] || views['/pipeline']
   const isAgent = user?.role === 'Agent'
-  const agentOptions = user?.name && !AGENTS.includes(user.name) ? [...AGENTS, user.name] : AGENTS
+  const agentOptions = useAgentOptions(user?.role === 'Agent' ? user.name : '')
   const [leads, setLeads] = useState([])
   const [clients, setClients] = useState([])
   const [deals, setDeals] = useState([])
@@ -528,6 +533,7 @@ export default function SalesWorkflowPage() {
     } finally {
       setLoading(false)
     }
+
   }
 
   useEffect(() => {
@@ -589,13 +595,33 @@ export default function SalesWorkflowPage() {
             { label: 'Cancelled', value: visibleRecords.filter((record) => record.status === 'Cancelled').length, icon: X, tone: 'red' },
           ]
 
-  function openCreate(preset = {}) {
-    const nextForm = { ...emptyForms[view.key], assignedTo: isAgent ? user?.name || agentOptions[0] : agentOptions[0], ...preset }
+  const openCreate = useCallback((preset = {}) => {
+    const nextForm = { ...emptyForms[view.key], assignedTo: isAgent ? user?.name || agentOptions[0] : agentOptions[0] || AGENTS[0], ...preset }
     setForm(nextForm)
     setEditing(false)
     setFormError('')
     setModalOpen(true)
-  }
+  }, [agentOptions, isAgent, setEditing, setForm, setFormError, setModalOpen, user, view.key])
+
+  useEffect(() => {
+    const recordId = location.state?.recordId
+    const recordList = view.key === 'deals' ? deals : view.key === 'tasks' ? tasks : view.key === 'appointments' ? appointments : []
+    const record = recordList.find((item) => item.id === recordId)
+
+    if (location.state?.quickAdd) {
+      const timeout = window.setTimeout(() => {
+        openCreate()
+        navigate(location.pathname, { replace: true, state: null })
+      })
+      return () => window.clearTimeout(timeout)
+    }
+    if (!record) return
+    const timeout = window.setTimeout(() => {
+      setSelectedRecord(record)
+      navigate(location.pathname, { replace: true, state: null })
+    })
+    return () => window.clearTimeout(timeout)
+  }, [appointments, deals, location.pathname, location.state, navigate, openCreate, tasks, view.key])
 
   function openEdit(record) {
     setForm({
