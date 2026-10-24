@@ -609,12 +609,8 @@
 
 .search-result mark {
   border-radius: 2px;
-  background: linear-gradient(
-    transparent 30%,
-    #e8c85a 30%,
-    #e8c85a 84%,
-    transparent 84%
-  );
+  padding: 0 1px;
+  background: #e8c85a;
   color: inherit;
 }
 

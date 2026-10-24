@@ -6,9 +6,9 @@ import { useAuth } from '../features/auth/AuthContext'
 
 const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024
 const PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_PROFILE_IMAGE_DIMENSION = 512
+const PROFILE_IMAGE_DIMENSION = 512
 
-function resizeProfileImage(file) {
+function readProfileImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onerror = () => reject(new Error('Could not read the selected profile picture.'))
@@ -21,28 +21,20 @@ function resizeProfileImage(file) {
       const image = new Image()
       image.onerror = () => reject(new Error('The selected file is not a valid image.'))
       image.onload = () => {
-        const scale = Math.min(
-          1,
-          MAX_PROFILE_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight),
-        )
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
-        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
-        const context = canvas.getContext('2d')
-        if (!context) {
-          reject(new Error('Your browser cannot process this profile picture.'))
-          return
-        }
-
-        context.fillStyle = '#ffffff'
-        context.fillRect(0, 0, canvas.width, canvas.height)
-        context.drawImage(image, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', 0.82))
+        resolve({
+          src: reader.result,
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        })
       }
       image.src = reader.result
     }
     reader.readAsDataURL(file)
   })
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
 }
 
 export default function SettingsPage() {
@@ -61,12 +53,18 @@ export default function SettingsPage() {
   const [city, setCity] = useState(user?.city || '')
   const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth || '')
   const [profileImage, setProfileImage] = useState(user?.profileImage || '')
+  const [cropSource, setCropSource] = useState(null)
+  const [cropViewportSize, setCropViewportSize] = useState(280)
+  const [cropZoom, setCropZoom] = useState(1)
+  const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 })
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [photoError, setPhotoError] = useState('')
   const [processingPhoto, setProcessingPhoto] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const cropDrag = useRef(null)
 
   async function selectProfileImage(event) {
     const file = event.target.files?.[0]
@@ -85,12 +83,125 @@ export default function SettingsPage() {
 
     setProcessingPhoto(true)
     try {
-      setProfileImage(await resizeProfileImage(file))
+      const image = await readProfileImage(file)
+      setCropSource(image)
+      setCropZoom(1)
+      setCropOffset({ x: 0, y: 0 })
     } catch (error) {
       setPhotoError(error.message || 'Unable to process the selected profile picture.')
     } finally {
       setProcessingPhoto(false)
     }
+  }
+
+  function cropBounds(zoom = cropZoom) {
+    const viewportSize = cropViewportSize
+    const scale = viewportSize / Math.min(cropSource.width, cropSource.height) * zoom
+    return {
+      viewportSize,
+      scale,
+      maxX: Math.max(0, (cropSource.width * scale - viewportSize) / 2),
+      maxY: Math.max(0, (cropSource.height * scale - viewportSize) / 2),
+    }
+  }
+
+  function updateCropZoom(value) {
+    const zoom = Number(value)
+    const bounds = cropBounds(zoom)
+    setCropZoom(zoom)
+    setCropOffset((offset) => ({
+      x: clamp(offset.x, -bounds.maxX, bounds.maxX),
+      y: clamp(offset.y, -bounds.maxY, bounds.maxY),
+    }))
+  }
+
+  function startCropDrag(event) {
+    if (event.button !== 0 && event.pointerType === 'mouse') return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    cropDrag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      offset: cropOffset,
+    }
+  }
+
+  function moveCrop(event) {
+    const drag = cropDrag.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const bounds = cropBounds()
+    setCropOffset({
+      x: clamp(drag.offset.x + event.clientX - drag.startX, -bounds.maxX, bounds.maxX),
+      y: clamp(drag.offset.y + event.clientY - drag.startY, -bounds.maxY, bounds.maxY),
+    })
+  }
+
+  function nudgeCrop(event) {
+    const nudges = {
+      ArrowLeft: [-10, 0],
+      ArrowRight: [10, 0],
+      ArrowUp: [0, -10],
+      ArrowDown: [0, 10],
+    }
+    const nudge = nudges[event.key]
+    if (!nudge) return
+    event.preventDefault()
+    const bounds = cropBounds()
+    setCropOffset((offset) => ({
+      x: clamp(offset.x + nudge[0], -bounds.maxX, bounds.maxX),
+      y: clamp(offset.y + nudge[1], -bounds.maxY, bounds.maxY),
+    }))
+  }
+
+  function finishCropDrag(event) {
+    if (cropDrag.current?.pointerId === event.pointerId) cropDrag.current = null
+  }
+
+  function cancelCrop() {
+    setCropSource(null)
+    setCropOffset({ x: 0, y: 0 })
+  }
+
+  function applyCrop() {
+    const image = new Image()
+    image.onerror = () => setPhotoError('Could not crop the selected profile picture.')
+    image.onload = () => {
+      try {
+        const { viewportSize, scale } = cropBounds()
+        const sourceSize = viewportSize / scale
+        const sourceX = clamp(
+          (image.naturalWidth - sourceSize) / 2 - cropOffset.x / scale,
+          0,
+          image.naturalWidth - sourceSize,
+        )
+        const sourceY = clamp(
+          (image.naturalHeight - sourceSize) / 2 - cropOffset.y / scale,
+          0,
+          image.naturalHeight - sourceSize,
+        )
+        const canvas = document.createElement('canvas')
+        canvas.width = PROFILE_IMAGE_DIMENSION
+        canvas.height = PROFILE_IMAGE_DIMENSION
+        const context = canvas.getContext('2d')
+        if (!context) throw new Error('Your browser cannot process this profile picture.')
+        context.drawImage(
+          image,
+          sourceX,
+          sourceY,
+          sourceSize,
+          sourceSize,
+          0,
+          0,
+          PROFILE_IMAGE_DIMENSION,
+          PROFILE_IMAGE_DIMENSION,
+        )
+        setProfileImage(canvas.toDataURL('image/jpeg', 0.82))
+        cancelCrop()
+      } catch (error) {
+        setPhotoError(error.message || 'Unable to crop the selected profile picture.')
+      }
+    }
+    image.src = cropSource.src
   }
 
   function saveProfile(event) {
@@ -187,11 +298,15 @@ export default function SettingsPage() {
 
           <form className="settings-form settings-profile-form" onSubmit={saveProfile}>
             <div className="settings-photo-field">
-              <span className="settings-photo-preview">
-                {profileImage
-                  ? <img src={profileImage} alt="Profile preview" />
-                  : <UserRound size={30} />}
-              </span>
+              <button
+                className="settings-photo-preview"
+                type="button"
+                onClick={() => profileImage && setPreviewOpen(true)}
+                disabled={!profileImage}
+                aria-label={profileImage ? 'View full-size profile picture' : 'No profile picture uploaded'}
+              >
+                {profileImage ? <img src={profileImage} alt="" /> : <UserRound size={30} />}
+              </button>
               <div className="settings-photo-copy">
                 <strong>Profile picture</strong>
                 {photoError && <small role="alert">{photoError}</small>}
@@ -366,6 +481,75 @@ export default function SettingsPage() {
             </div>
           </form>
         </section>
+      )}
+      {cropSource && (
+        <div
+          className="settings-photo-modal-backdrop"
+          onMouseDown={(event) => event.target === event.currentTarget && cancelCrop()}
+        >
+          <section className="settings-photo-modal" role="dialog" aria-modal="true" aria-labelledby="profile-crop-title">
+            <header>
+              <div>
+                <span className="settings-photo-modal-kicker">PROFILE PICTURE</span>
+                <h2 id="profile-crop-title">Crop your picture</h2>
+              </div>
+              <button type="button" className="settings-photo-modal-close" onClick={cancelCrop} aria-label="Cancel crop">
+                <X size={17} />
+              </button>
+            </header>
+            <p>Drag the image to position it, then adjust the zoom to fit the circle.</p>
+            <div
+              className="settings-photo-crop-stage"
+              tabIndex={0}
+              aria-label="Image crop area. Drag or use arrow keys to reposition the picture."
+              ref={(node) => {
+                if (node) setCropViewportSize(node.clientWidth)
+              }}
+              onKeyDown={nudgeCrop}
+              onPointerDown={startCropDrag}
+              onPointerMove={moveCrop}
+              onPointerUp={finishCropDrag}
+              onPointerCancel={finishCropDrag}
+              onLostPointerCapture={finishCropDrag}
+            >
+              <img
+                src={cropSource.src}
+                alt="Adjustable profile picture crop"
+                draggable="false"
+                style={{
+                  width: `${cropSource.width * cropBounds().scale}px`,
+                  transform: `translate(calc(-50% + ${cropOffset.x}px), calc(-50% + ${cropOffset.y}px))`,
+                }}
+              />
+            </div>
+            <label className="settings-photo-zoom">
+              Zoom
+              <input
+                type="range"
+                min="1"
+                max="3"
+                step="0.01"
+                value={cropZoom}
+                onChange={(event) => updateCropZoom(event.target.value)}
+              />
+            </label>
+            <footer>
+              <button type="button" className="settings-photo-cancel" onClick={cancelCrop}>Cancel</button>
+              <button type="button" className="settings-primary-button" onClick={applyCrop}>Use picture</button>
+            </footer>
+          </section>
+        </div>
+      )}
+      {previewOpen && profileImage && (
+        <div
+          className="settings-photo-viewer-backdrop"
+          onMouseDown={(event) => event.target === event.currentTarget && setPreviewOpen(false)}
+        >
+          <button type="button" className="settings-photo-viewer-close" onClick={() => setPreviewOpen(false)} aria-label="Close profile picture preview">
+            <X size={20} />
+          </button>
+          <img src={profileImage} alt="Full-size profile picture" />
+        </div>
       )}
     </section>
   )

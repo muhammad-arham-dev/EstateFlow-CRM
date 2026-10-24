@@ -2101,6 +2101,13 @@ button:disabled {
   background: #e5eaff;
   color: #4f63bb;
   box-shadow: 0 0 0 1px #e8eaf3;
+  padding: 0;
+  font: inherit;
+  cursor: zoom-in;
+}
+
+.settings-photo-preview:disabled {
+  cursor: default;
 }
 
 .settings-photo-preview img {
@@ -2206,6 +2213,159 @@ button:disabled {
   background: #fff5f4;
 }
 
+.settings-photo-modal-backdrop,
+.settings-photo-viewer-backdrop {
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(26 35 55 / 58%);
+}
+
+.settings-photo-modal {
+  display: grid;
+  width: min(100%, 420px);
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid #e5eaf3;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgb(24 35 58 / 20%);
+}
+
+.settings-photo-modal > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-photo-modal > header h2 {
+  margin: 4px 0 0;
+  color: var(--settings-heading);
+  font-size: 17px;
+}
+
+.settings-photo-modal-kicker {
+  color: var(--settings-primary-hover);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.settings-photo-modal > p {
+  margin: 0;
+  color: var(--settings-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.settings-photo-modal-close,
+.settings-photo-viewer-close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #e1e6f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64718a;
+  cursor: pointer;
+}
+
+.settings-photo-crop-stage {
+  position: relative;
+  width: min(280px, 100%);
+  aspect-ratio: 1;
+  justify-self: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #e5eaff;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.settings-photo-crop-stage:active {
+  cursor: grabbing;
+}
+
+.settings-photo-crop-stage:focus-visible {
+  outline: 3px solid var(--settings-primary);
+  outline-offset: 3px;
+}
+
+.settings-photo-crop-stage img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.settings-photo-zoom {
+  display: grid;
+  gap: 7px;
+  color: #344056;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-photo-zoom input {
+  width: 100%;
+  accent-color: var(--settings-primary);
+}
+
+.settings-photo-modal > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.settings-photo-cancel {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #e1e6f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64718a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-photo-modal > footer .settings-primary-button {
+  min-height: 38px;
+  font-size: 12px;
+}
+
+.settings-photo-viewer-backdrop {
+  background: rgb(13 18 30 / 88%);
+}
+
+.settings-photo-viewer-backdrop > img {
+  display: block;
+  max-width: min(90vw, 900px);
+  max-height: 88vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.settings-photo-viewer-close {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  width: 40px;
+  height: 40px;
+}
+
 /* Form actions */
 
 .settings-form-actions {
@@ -2282,6 +2442,10 @@ button:disabled {
     width: 72px;
     height: 72px;
     flex-basis: 72px;
+  }
+
+  .settings-photo-modal {
+    padding: 18px;
   }
 
   .settings-tabs {

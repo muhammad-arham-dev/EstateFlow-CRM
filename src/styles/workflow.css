@@ -1284,6 +1284,15 @@
     padding: 15px;
   }
 
+  .workflow-calendar-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .workflow-calendar-controls strong {
+    flex: 1;
+  }
+
   .workflow-calendar-grid {
     padding: 9px 8px 0;
   }
