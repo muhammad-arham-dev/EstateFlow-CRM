@@ -322,7 +322,7 @@
     height: 100dvh;
     min-height: 0;
     box-sizing: border-box;
-    padding: 54px 20px 12px;
+    padding: 16px 20px 12px;
     overflow: hidden;
   }
 
@@ -331,10 +331,8 @@
   }
 
   .auth-back-home-mobile {
-    position: absolute;
-    top: 16px;
-    left: 20px;
     display: inline-block;
+    align-self: flex-start;
     margin: 0;
     color: #526fe4;
   }
@@ -353,12 +351,8 @@
     display: flex;
     width: min(460px, 100%);
     justify-content: center;
-    margin-bottom: 0;
-    color: #202b45;
-  }
-
-  .auth-form-wrap {
     margin-block: auto;
+    color: #202b45;
   }
 
   .auth-heading h2 {
@@ -414,11 +408,7 @@
 
 @media (max-width: 380px) {
   .auth-form-panel {
-    padding: 50px 16px 8px;
-  }
-
-  .auth-mobile-brand {
-    margin-bottom: 0;
+    padding: 16px 16px 8px;
   }
 
   .auth-heading h2 {
