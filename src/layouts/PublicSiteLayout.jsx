@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { Menu, UserRound, X } from 'lucide-react'
+import { Building2, Menu, UserRound, X } from 'lucide-react'
 import '../styles/public-site.css'
 
 const socialLinks = [
@@ -64,7 +64,7 @@ export default function PublicSiteLayout() {
       <header className={`public-header ${isScrolled ? 'public-header-scrolled' : ''}`}>
         <div className="public-header-inner">
           <Link className="public-brand" to="/" aria-label="EstateFlow home" onClick={closeMenu}>
-            <img src="/favicon.svg" alt="" />
+            <span className="public-brand-mark"><Building2 size={22} strokeWidth={2.4} /></span>
             <span>Estate<span>Flow</span></span>
           </Link>
 
@@ -105,7 +105,7 @@ export default function PublicSiteLayout() {
         <div className="public-footer-main">
           <div className="public-footer-brand">
             <Link className="public-brand public-brand-light" to="/">
-              <img src="/favicon.svg" alt="" />
+              <span className="public-brand-mark"><Building2 size={22} strokeWidth={2.4} /></span>
               <span>Estate<span>Flow</span></span>
             </Link>
             <p>A clearer way to build lasting real-estate relationships.</p>
