@@ -21,6 +21,35 @@
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.auth-brand-top {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+
+.auth-back-home {
+  color: #dce5fa;
+  font-size: 10px;
+  font-weight: 600;
+  transition: color 150ms ease;
+}
+
+.auth-page .auth-back-home-desktop {
+  color: #fff;
+}
+
+.auth-page .auth-back-home-desktop:hover {
+  color: #6687e8;
+}
+
+.auth-back-home:hover {
+  color: #fff;
+}
+
+.auth-back-home-mobile {
+  display: none;
+}
+
 /* Branding panel */
 
 .auth-brand-panel {
@@ -96,7 +125,7 @@
 .auth-form-panel {
   display: grid;
   place-items: center;
-  padding: 48px 28px;
+  padding: 24px 28px;
 }
 
 .auth-form-wrap {
@@ -106,11 +135,11 @@
 
 .auth-mobile-brand {
   display: none;
-  margin-bottom: 40px;
+  margin-bottom: 22px;
 }
 
 .auth-heading {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .auth-heading h2 {
@@ -132,12 +161,12 @@
 
 .auth-form {
   display: grid;
-  gap: 19px;
+  gap: 13px;
 }
 
 .auth-form label {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   color: #344056;
   font-size: 13px;
   font-weight: 650;
@@ -147,8 +176,8 @@
 .auth-form select {
   box-sizing: border-box;
   width: 100%;
-  min-height: 47px;
-  padding: 12px 13px;
+  min-height: 43px;
+  padding: 10px 12px;
   border: 1px solid #dce2ed;
   border-radius: 9px;
   outline: none;
@@ -179,7 +208,7 @@
 
 .auth-submit {
   width: 100%;
-  min-height: 48px;
+  min-height: 44px;
   margin-top: 3px;
   border: 1px solid var(--auth-primary);
   border-radius: 9px;
@@ -215,14 +244,14 @@
 /* Links */
 
 .auth-links {
-  margin-top: 23px;
+  margin-top: 15px;
   color: var(--auth-muted);
   text-align: center;
   font-size: 13px;
 }
 
 .auth-links p {
-  margin: 15px 0 0;
+  margin: 9px 0 0;
 }
 
 .auth-page a {
@@ -264,7 +293,7 @@
 }
 
 .auth-legal {
-  margin-top: 42px;
+  margin-top: 22px;
   color: #9aa3b3;
   font-size: 11px;
   text-align: center;
@@ -285,7 +314,21 @@
     display: block;
     min-height: 100vh;
     box-sizing: border-box;
-    padding: 28px 22px 40px;
+    padding: 18px 22px 24px;
+  }
+
+  .auth-back-home-desktop {
+    display: none;
+  }
+
+  .auth-back-home-mobile {
+    display: inline-block;
+    margin-bottom: 12px;
+    color: #526fe4;
+  }
+
+  .auth-back-home-mobile:hover {
+    color: #405dd0;
   }
 
   .auth-form-wrap {
@@ -295,7 +338,7 @@
 
   .auth-mobile-brand {
     display: flex;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     color: #202b45;
   }
 
@@ -303,18 +346,36 @@
     font-size: 27px;
   }
 
+  .auth-heading {
+    margin-bottom: 16px;
+  }
+
+  .auth-form {
+    gap: 11px;
+  }
+
+  .auth-form input,
+  .auth-form select {
+    min-height: 41px;
+    padding: 9px 11px;
+  }
+
+  .auth-links {
+    margin-top: 12px;
+  }
+
   .auth-legal {
-    margin-top: 32px;
+    margin-top: 18px;
   }
 }
 
 @media (max-width: 380px) {
   .auth-form-panel {
-    padding: 24px 16px 32px;
+    padding: 16px 16px 20px;
   }
 
   .auth-mobile-brand {
-    margin-bottom: 32px;
+    margin-bottom: 16px;
   }
 
   .auth-heading h2 {

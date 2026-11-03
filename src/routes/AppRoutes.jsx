@@ -50,6 +50,18 @@ const AgentsPage = lazy(
 const SearchPage = lazy(
   () => import('../pages/SearchPage'),
 )
+const PublicSiteLayout = lazy(
+  () => import('../layouts/PublicSiteLayout'),
+)
+const HomePage = lazy(
+  () => import('../pages/HomePage'),
+)
+const AboutPage = lazy(
+  () => import('../pages/AboutPage'),
+)
+const ContactPage = lazy(
+  () => import('../pages/ContactPage'),
+)
 
 const managementRoles = [
   'Super Admin',
@@ -136,6 +148,12 @@ export default function AppRoutes() {
       <AuthProvider>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
+            <Route element={<PublicSiteLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+            </Route>
+
             <Route
               path="/login"
               element={
@@ -186,16 +204,6 @@ export default function AppRoutes() {
                 </ProtectedRoute>
               }
             >
-              <Route
-                index
-                element={
-                  <Navigate
-                    to="/dashboard"
-                    replace
-                  />
-                }
-              />
-
               <Route
                 path="/dashboard"
                 element={<DashboardPage />}
@@ -299,7 +307,7 @@ export default function AppRoutes() {
               path="*"
               element={
                 <Navigate
-                  to="/dashboard"
+                  to="/"
                   replace
                 />
               }

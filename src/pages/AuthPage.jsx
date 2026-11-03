@@ -95,13 +95,16 @@ export default function AuthPage({ mode = 'login' }) {
   return (
     <main className="auth-page">
       <section className="auth-brand-panel">
-        <div className="auth-brand">
-          <span className="auth-brand-mark">
-            <Building2 size={22} strokeWidth={2.4} />
-          </span>
+        <div className="auth-brand-top">
+          <Link className="auth-back-home auth-back-home-desktop" to="/">Back to Home Page</Link>
+          <div className="auth-brand">
+            <span className="auth-brand-mark">
+              <Building2 size={22} strokeWidth={2.4} />
+            </span>
 
-          <div className="auth-brand-text">
-            <span className="auth-brand-subtitle">EstateFlow</span>
+            <div className="auth-brand-text">
+              <span className="auth-brand-subtitle">EstateFlow</span>
+            </div>
           </div>
         </div>
 
@@ -118,6 +121,7 @@ export default function AuthPage({ mode = 'login' }) {
       </section>
 
       <section className="auth-form-panel">
+        <Link className="auth-back-home auth-back-home-mobile" to="/">Back to Home Page</Link>
         <div className="auth-mobile-brand">
           <span className="auth-brand-mark">
             <Building2 size={22} strokeWidth={2.4} />

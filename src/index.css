@@ -124,6 +124,19 @@ button:disabled {
   margin-bottom: 28px;
 }
 
+.sidebar-brand-link {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 11px;
+  color: inherit;
+}
+
+.sidebar-brand-link:hover {
+  color: inherit;
+}
+
 .brand-mark {
   display: grid;
   width: 39px;
@@ -266,6 +279,11 @@ button:disabled {
 .sidebar-collapsed .sidebar-brand {
   justify-content: center;
   padding-inline: 0;
+}
+
+.sidebar-collapsed .sidebar-brand-link {
+  flex: 0 0 39px;
+  justify-content: center;
 }
 
 .sidebar-collapsed .nav-link {

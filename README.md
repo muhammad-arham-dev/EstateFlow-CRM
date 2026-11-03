@@ -1,7 +1,8 @@
 # EstateFlow CRM
 
 EstateFlow is a frontend-only real-estate CRM built with React and Vite. It
-includes a responsive workspace, mock authentication and roles, dashboard,
+includes a responsive public Home, About Us, and Contact Us website alongside
+the CRM workspace, mock authentication and roles, dashboard,
 lead management, lead-to-client conversion, client profiles, and property
 listing management. The sales workflow includes a lead Kanban pipeline, deal
 tracking, tasks and follow-ups, appointments, record notes, and activity
@@ -36,6 +37,13 @@ email or modify credentials. In development, the login/register role selector
 can be used to preview role-aware screens.
 
 Clearing the app's local storage resets its seeded demo records.
+
+The public contact form is a frontend demo and does not send or store
+submissions. The public website uses externally hosted Unsplash/Pexels imagery
+and an OpenStreetMap map preview; replace these with approved brand assets and
+a real office location before treating the site as a production business
+website. Footer social links currently point to the social platforms, not
+EstateFlow-specific profiles.
 
 The Sales Pipeline uses lead statuses from the Leads module so stage changes
 stay in sync across both screens. Deals, tasks, and appointments can be linked

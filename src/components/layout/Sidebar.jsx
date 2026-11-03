@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { Building2, ChevronLeft, X } from 'lucide-react'
 import { navigationItems } from '../../utils/navigation'
 import { useAuth } from '../../features/auth/AuthContext'
@@ -39,16 +39,18 @@ export default function Sidebar({
         ].join(" ")}
       >
         <div className="sidebar-brand">
-          <div className="brand-mark">
-            <Building2 size={22} strokeWidth={2.4} />
-          </div>
-
-          {!collapsed && (
-            <div className="brand-copy">
-              <span className="brand-name">EstateFlow</span>
-              <span className="brand-subtitle">REAL ESTATE CRM</span>
+          <Link className="sidebar-brand-link" to="/" aria-label="EstateFlow home">
+            <div className="brand-mark">
+              <Building2 size={22} strokeWidth={2.4} />
             </div>
-          )}
+
+            {!collapsed && (
+              <div className="brand-copy">
+                <span className="brand-name">EstateFlow</span>
+                <span className="brand-subtitle">REAL ESTATE CRM</span>
+              </div>
+            )}
+          </Link>
 
           <button
             className="icon-button sidebar-close-mobile"
