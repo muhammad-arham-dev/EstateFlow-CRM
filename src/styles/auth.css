@@ -303,7 +303,10 @@
 
 @media (max-width: 760px) {
   .auth-page {
+    height: 100vh;
+    height: 100dvh;
     grid-template-columns: 1fr;
+    overflow: hidden;
   }
 
   .auth-brand-panel {
@@ -316,10 +319,12 @@
     grid-template-columns: minmax(0, 1fr);
     align-content: center;
     justify-items: center;
-    min-height: 100vh;
-    min-height: 100svh;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
     box-sizing: border-box;
-    padding: 58px 22px 24px;
+    padding: 48px 20px 12px;
+    overflow: hidden;
   }
 
   .auth-back-home-desktop {
@@ -328,8 +333,8 @@
 
   .auth-back-home-mobile {
     position: absolute;
-    top: 20px;
-    left: 22px;
+    top: 16px;
+    left: 20px;
     display: inline-block;
     margin: 0;
     color: #526fe4;
@@ -348,48 +353,72 @@
   .auth-mobile-brand {
     display: flex;
     width: min(460px, 100%);
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     color: #202b45;
   }
 
   .auth-heading h2 {
-    font-size: 27px;
+    margin-bottom: 6px;
+    font-size: 24px;
   }
 
   .auth-heading {
-    margin-bottom: 16px;
+    margin-bottom: 11px;
+  }
+
+  .auth-heading p {
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .auth-form {
-    gap: 11px;
+    gap: 7px;
+  }
+
+  .auth-form label {
+    gap: 3px;
+    font-size: 11px;
   }
 
   .auth-form input,
   .auth-form select {
-    min-height: 41px;
-    padding: 9px 11px;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .auth-submit {
+    min-height: 38px;
+    margin-top: 1px;
+    font-size: 13px;
   }
 
   .auth-links {
-    margin-top: 12px;
+    margin-top: 8px;
+    font-size: 11px;
+  }
+
+  .auth-links p {
+    margin-top: 5px;
   }
 
   .auth-legal {
-    margin-top: 18px;
+    display: none;
   }
+
 }
 
 @media (max-width: 380px) {
   .auth-form-panel {
-    padding: 16px 16px 20px;
+    padding: 44px 16px 8px;
   }
 
   .auth-mobile-brand {
-    margin-bottom: 16px;
+    margin-bottom: 9px;
   }
 
   .auth-heading h2 {
-    font-size: 24px;
+    font-size: 22px;
   }
 }
 
