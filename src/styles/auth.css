@@ -317,13 +317,13 @@
     position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    align-content: center;
+    align-content: start;
     justify-items: center;
     height: 100vh;
     height: 100dvh;
     min-height: 0;
     box-sizing: border-box;
-    padding: 48px 20px 12px;
+    padding: 54px 20px 12px;
     overflow: hidden;
   }
 
@@ -353,7 +353,8 @@
   .auth-mobile-brand {
     display: flex;
     width: min(460px, 100%);
-    margin-bottom: 12px;
+    justify-content: center;
+    margin-bottom: 18px;
     color: #202b45;
   }
 
@@ -410,7 +411,7 @@
 
 @media (max-width: 380px) {
   .auth-form-panel {
-    padding: 44px 16px 8px;
+    padding: 50px 16px 8px;
   }
 
   .auth-mobile-brand {
